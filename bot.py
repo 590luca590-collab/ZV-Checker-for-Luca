@@ -21,6 +21,10 @@ from telegram.error import TelegramError
 BOT_TOKEN      = "8952499751:AAGgAsClHhwXDSTobbQxrXlZJs8dZm9RxKA"
 DATABASE_URL   = os.environ["DATABASE_URL"]
 GROUP_ID       = -1003839666195
+ADMIN_IDS      = [
+    390056974,
+    6345602422,
+]
 
 TIMEOUT_MINUTI          = 5    # minuti per fornire il nick al primo ingresso
 TIMEOUT_CORREZIONE_MIN  = 30   # minuti per ri-fornire il nick dopo "correggi"
