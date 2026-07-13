@@ -24,6 +24,7 @@ GROUP_ID       = -1003839666195
 ADMIN_IDS      = [
     390056974,
     6345602422,
+    695054325,
 ]
 
 TIMEOUT_MINUTI          = 5    # minuti per fornire il nick al primo ingresso
