@@ -22,9 +22,9 @@ BOT_TOKEN      = "8952499751:AAGgAsClHhwXDSTobbQxrXlZJs8dZm9RxKA"
 DATABASE_URL   = os.environ["DATABASE_URL"]
 GROUP_ID       = -1003839666195
 ADMIN_IDS      = [
-    390056974,
-    6345602422,
-    695054325,
+    390056974, # imBurlyy
+    6345602422, # Luca590
+    695054325, # FalconEternal
 ]
 
 TIMEOUT_MINUTI          = 5    # minuti per fornire il nick al primo ingresso
