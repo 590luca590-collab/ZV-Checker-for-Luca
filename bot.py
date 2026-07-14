@@ -21,11 +21,7 @@ from telegram.error import TelegramError
 BOT_TOKEN      = "8952499751:AAGgAsClHhwXDSTobbQxrXlZJs8dZm9RxKA"
 DATABASE_URL   = os.environ["DATABASE_URL"]
 GROUP_ID       = -1003839666195
-ADMIN_IDS      = [
-    390056974, # imBurlyy
-    6345602422, # Luca590
-    695054325, # FalconEternal
-]
+ADMIN_IDS      = [390056974]
 
 TIMEOUT_MINUTI          = 5    # minuti per fornire il nick al primo ingresso
 TIMEOUT_CORREZIONE_MIN  = 30   # minuti per ri-fornire il nick dopo "correggi"
@@ -691,6 +687,10 @@ async def resoconto_giornaliero(context: ContextTypes.DEFAULT_TYPE):
 #  HEALTH SERVER (per non far spegnere il servizio su Render)
 # ══════════════════════════════════════════════
 
+last_update_time = datetime.now()
+WATCHDOG_TIMEOUT_SECONDS = 180  # nessun heartbeat riuscito da 3 min -> bot bloccato
+
+
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -706,6 +706,27 @@ def run_health_server():
     HTTPServer(("0.0.0.0", port), HealthHandler).serve_forever()
 
 
+def run_watchdog():
+    while True:
+        import time as _time
+        _time.sleep(30)
+        elapsed = (datetime.now() - last_update_time).total_seconds()
+        if elapsed > WATCHDOG_TIMEOUT_SECONDS:
+            logger.error(
+                f"Watchdog: nessun update ricevuto da {int(elapsed)}s, il bot sembra bloccato. Chiudo il processo."
+            )
+            os._exit(1)
+
+
+async def heartbeat_job(context: ContextTypes.DEFAULT_TYPE):
+    global last_update_time
+    try:
+        await context.bot.get_me()
+        last_update_time = datetime.now()
+    except Exception:
+        logger.exception("Heartbeat: chiamata a Telegram fallita.")
+
+
 # ══════════════════════════════════════════════
 #  MAIN
 # ══════════════════════════════════════════════
@@ -714,8 +735,12 @@ def main():
     init_db()
 
     threading.Thread(target=run_health_server, daemon=True).start()
+    threading.Thread(target=run_watchdog, daemon=True).start()
 
     app = Application.builder().token(BOT_TOKEN).build()
+
+    # Heartbeat: verifica ogni 60s che il bot sia ancora connesso a Telegram
+    app.job_queue.run_repeating(heartbeat_job, interval=60, first=10)
 
     # Nuovi membri nel gruppo
     app.add_handler(MessageHandler(
@@ -754,4 +779,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        logger.exception("Il bot si è fermato per un errore non gestito, chiudo il processo.")
+        os._exit(1)
+    logger.error("run_polling è terminato inaspettatamente, chiudo il processo.")
+    os._exit(1)
