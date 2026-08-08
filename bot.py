@@ -18,10 +18,10 @@ from telegram.error import TelegramError
 # ─────────────────────────────────────────────
 #  CONFIGURAZIONE
 # ─────────────────────────────────────────────
-BOT_TOKEN      = "8952499751:AAGgAsClHhwXDSTobbQxrXlZJs8dZm9RxKA"
+BOT_TOKEN      = os.environ["BOT_TOKEN"]
 DATABASE_URL   = os.environ["DATABASE_URL"]
 GROUP_ID       = -1003839666195
-ADMIN_IDS      = [390056974]
+ADMIN_IDS      = [390056974, 6345602422]
 
 TIMEOUT_MINUTI          = 5    # minuti per fornire il nick al primo ingresso
 TIMEOUT_CORREZIONE_MIN  = 30   # minuti per ri-fornire il nick dopo "correggi"
@@ -684,12 +684,8 @@ async def resoconto_giornaliero(context: ContextTypes.DEFAULT_TYPE):
 
 
 # ══════════════════════════════════════════════
-#  HEALTH SERVER (per non far spegnere il servizio su Render)
+#  HEALTH SERVER (necessario per Render Web Service free)
 # ══════════════════════════════════════════════
-
-last_update_time = datetime.now()
-WATCHDOG_TIMEOUT_SECONDS = 180  # nessun heartbeat riuscito da 3 min -> bot bloccato
-
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -704,6 +700,14 @@ class HealthHandler(BaseHTTPRequestHandler):
 def run_health_server():
     port = int(os.environ.get("PORT", 8080))
     HTTPServer(("0.0.0.0", port), HealthHandler).serve_forever()
+
+
+# ══════════════════════════════════════════════
+#  WATCHDOG (riavvia il processo se il bot si blocca)
+# ══════════════════════════════════════════════
+
+last_update_time = datetime.now()
+WATCHDOG_TIMEOUT_SECONDS = 180  # nessun heartbeat riuscito da 3 min -> bot bloccato
 
 
 def run_watchdog():
