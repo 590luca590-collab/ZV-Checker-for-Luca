@@ -21,7 +21,7 @@ from telegram.error import TelegramError
 BOT_TOKEN      = os.environ["BOT_TOKEN"]
 DATABASE_URL   = os.environ["DATABASE_URL"]
 GROUP_ID       = -1003839666195
-ADMIN_IDS      = [390056974, 6345602422]
+ADMIN_IDS      = [390056974]
 
 TIMEOUT_MINUTI          = 5    # minuti per fornire il nick al primo ingresso
 TIMEOUT_CORREZIONE_MIN  = 30   # minuti per ri-fornire il nick dopo "correggi"
@@ -684,14 +684,25 @@ async def resoconto_giornaliero(context: ContextTypes.DEFAULT_TYPE):
 
 
 # ══════════════════════════════════════════════
-#  HEALTH SERVER (necessario per Render Web Service free)
+#  HEALTH SERVER (collegato allo stato reale del bot)
 # ══════════════════════════════════════════════
+
+last_update_time = datetime.now()
+WATCHDOG_TIMEOUT_SECONDS = 180  # nessun heartbeat riuscito da 3 min -> bot bloccato
+
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+        elapsed = (datetime.now() - last_update_time).total_seconds()
+        if elapsed <= WATCHDOG_TIMEOUT_SECONDS:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            # Bot bloccato: rispondo errore cosi' l'Health Check di Render lo rileva e riavvia il servizio
+            self.send_response(503)
+            self.end_headers()
+            self.wfile.write(b"BOT NOT RESPONDING")
 
     def log_message(self, format, *args):
         pass  # silenzia i log HTTP per non intasare i log del bot
@@ -705,9 +716,6 @@ def run_health_server():
 # ══════════════════════════════════════════════
 #  WATCHDOG (riavvia il processo se il bot si blocca)
 # ══════════════════════════════════════════════
-
-last_update_time = datetime.now()
-WATCHDOG_TIMEOUT_SECONDS = 180  # nessun heartbeat riuscito da 3 min -> bot bloccato
 
 
 def run_watchdog():
